@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import json
 import sys
+import os
 
 from typing import Tuple
 from typing import List
@@ -31,6 +32,10 @@ class Manifest:
                 return a['versions']
 
     def remove_application(self, app_name: str) -> None:
+        """remove an application from the manifest
+
+        :param app_name: target application name to remove
+        """
         app_location = self._application_exists(app_name)
         if self._application_exists(app_name) < 0:
             raise LookupError('{app_name} does not exist in manifest.'.format(app_name=app_name))
@@ -159,6 +164,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-f', help='Manifest file name')
     parser.add_argument('-app', help='Application name')
+    parser.add_argument('-create', action='store_true', help='Create manifest file if doesn\'t exist')
+
     subparsers = parser.add_subparsers(dest='command')
     # application options
     app_parser = subparsers.add_parser('application')
@@ -183,7 +190,11 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if not args.f:
-        parser.error('-f note supplied.')
+        parser.error('-f was not supplied.')
+
+    if args.create and not os.path.isfile(args.f):
+        with open(args.f, 'w') as fh:
+            json.dump([], fh)
 
     m = Manifest(manifest_file=args.f)
     if args.command == 'delete-application':
