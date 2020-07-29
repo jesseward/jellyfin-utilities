@@ -2,7 +2,8 @@ import hashlib
 
 
 def md5(filename) -> str:
-    """Generates the md5 sum of a target file. Needed where the binary is not present on disk."""
+    """Generates the md5 sum of a target file.
+    The github-actions Ubuntu image does not contain md5 binary."""
 
     hash_md5 = hashlib.md5()
     with open(filename, "rb") as f:
