@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import datetime
 import json
 import sys
 import os
@@ -38,13 +39,13 @@ class Manifest:
         """
         app_location = self._application_exists(app_name)
         if self._application_exists(app_name) < 0:
-            raise LookupError('{app_name} does not exist in manifest.'.format(app_name=app_name))
+            raise LookupError(f'{app_name} does not exist in manifest.')
 
         del self.manifest[app_location]
 
     def add_application(self, guid: str, app_name: str, description: str, overview: str, owner: str, category: str):
         if self._application_exists(app_name) >= 0:
-            raise LookupError('{app_name} already exists in manifest.'.format(app_name=app_name))
+            raise LookupError(f'{app_name} already exists in manifest.')
 
         self.manifest.append({
             'guid': guid,
@@ -95,12 +96,12 @@ class Manifest:
         app_location, version_location = self._version_exists(app_name, version)
 
         if version_location >= 0:
-            raise LookupError('{app_name}, {version} already exists'.format(app_name=app_name, version=version))
+            raise LookupError(f'{app_name}, {version} already exists')
 
         self.manifest[app_location]['versions'].append({
             'version': version,
             'changelog': change_log,
-            'tagetAbi': target_abi,
+            'targetAbi': target_abi,
             'sourceUrl': source_url,
             'checksum': checksum,
             'timestamp': timestamp})
@@ -114,8 +115,7 @@ class Manifest:
         app_location, version_location = self._version_exists(app_name, version)
 
         if version_location < 0:
-            raise LookupError('{app_name}, {version} does not exist, unable to remove'.format(app_name=app_name,
-                                                                                              version=version))
+            raise LookupError(f'{app_name}, {version} does not exist, unable to remove')
 
         del self.manifest[app_location]['versions'][version_location]
 
@@ -130,7 +130,7 @@ class Manifest:
         """
         app_location = self._application_exists(app_name)
         if app_location < 0:
-            raise LookupError('{app_name} does not exist in manifest'.format(app_name=app_name))
+            raise LookupError(f'{app_name} does not exist in manifest')
 
         for i, ver in enumerate(self.manifest[app_location]['versions']):
             if ver['version'] == version:
@@ -181,7 +181,8 @@ if __name__ == '__main__':
     version_parser.add_argument('-ck', help='Version checksum')
     version_parser.add_argument('-abi', help='Version target abi')
     version_parser.add_argument('-url', help='Version url')
-    version_parser.add_argument('-ts', help='Version timestamp')
+    version_parser.add_argument('-ts', help='Version timestamp', required=False,
+                                default=datetime.datetime.utcnow().isoformat(timespec='seconds') + 'Z')
 
     del_version = subparsers.add_parser('delete-version')
     del_version.add_argument('-ver', help='version to remove from manifest')
@@ -196,9 +197,16 @@ if __name__ == '__main__':
         with open(args.f, 'w') as fh:
             json.dump([], fh)
 
-    m = Manifest(manifest_file=args.f)
+    try:
+        m = Manifest(manifest_file=args.f)
+    except FileNotFoundError:
+        sys.exit(f'[ERROR] unable to locate {args.f}, re-run with -create')
+
     if args.command == 'delete-application':
         m.remove_application(args.app)
+
+    if args.command == 'delete-version':
+        m.remove_version(args.app, args.ver)
 
     if args.command == 'application':
         try:
