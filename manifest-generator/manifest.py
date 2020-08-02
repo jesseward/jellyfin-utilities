@@ -98,7 +98,7 @@ class Manifest:
         if version_location >= 0:
             raise LookupError(f'{app_name}, {version} already exists')
 
-        self.manifest[app_location]['versions'].append({
+        self.manifest[app_location]['versions'].insert(0, {
             'version': version,
             'changelog': change_log,
             'targetAbi': target_abi,
@@ -163,7 +163,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-f', help='Manifest file name')
-    parser.add_argument('-app', help='Application name')
+    parser.add_argument('-app', required=True, help='Application name')
     parser.add_argument('-create', action='store_true', help='Create manifest file if doesn\'t exist')
 
     subparsers = parser.add_subparsers(dest='command')
@@ -211,12 +211,12 @@ if __name__ == '__main__':
     if args.command == 'application':
         try:
             m.add_application(args.guid, args.app, args.desc, args.ov, args.owner, args.cat)
-        except LookupError:
-            sys.exit('[ERROR] : Application already exists in manifest')
+        except LookupError as e:
+            sys.exit(f'[ERROR] Failed to add application. {e}')
 
     if args.command == 'version':
         try:
             m.add_version(args.app, args.ver, args.cl, args.abi, args.url, args.ck, args.ts)
-        except LookupError:
-            sys.exit('[ERROR] : Version already exists in manifest')
+        except LookupError as e:
+            sys.exit(f'[ERROR] Failed to insert new version. {e}')
     m.close()
